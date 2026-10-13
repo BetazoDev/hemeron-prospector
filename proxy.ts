@@ -1,0 +1,57 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
+
+const JWT_SECRET_STRING = process.env.JWT_SECRET || 'neoprospector_super_secret_jwt_key_2026_diabolical'
+const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING)
+
+// `/api/apify/webhook` se autentica con su propio secreto por base, no con la cookie.
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/health', '/api/apify/webhook', '/icon.svg']
+
+export async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  // Allow static Next.js assets
+  // El worker de la Mac se autentica con WORKER_TOKEN en cada ruta, no con la cookie.
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/static') ||
+    pathname.startsWith('/api/worker/') ||
+    PUBLIC_PATHS.includes(pathname)
+  ) {
+    return NextResponse.next()
+  }
+
+  // Check auth_token cookie
+  const token = req.cookies.get('auth_token')?.value
+
+  let isAuthenticated = false
+  if (token) {
+    try {
+      await jwtVerify(token, JWT_SECRET)
+      isAuthenticated = true
+    } catch {
+      isAuthenticated = false
+    }
+  }
+
+  if (!isAuthenticated) {
+    // If request is an API call, return 401 JSON
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: 'No autorizado. Por favor inicia sesión.' },
+        { status: 401 }
+      )
+    }
+
+    // Otherwise redirect to /login
+    const loginUrl = req.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    return NextResponse.redirect(loginUrl)
+  }
+
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|icon.svg).*)'],
+}

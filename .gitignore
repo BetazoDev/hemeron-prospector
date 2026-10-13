@@ -1,0 +1,13 @@
+.env.local
+.env
+node_modules
+.next
+*.db
+*.db-journal
+*.tsbuildinfo
+prisma/dev.db
+prisma/prod.db
+
+# Capturas de revisión de diseño (se regeneran)
+.impeccable/review/
+.impeccable/questions/
