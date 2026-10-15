@@ -103,7 +103,7 @@
 }
 
 @media (hover: hover) {
-  .legend-item:not([aria-pressed='true']):not(.is-static):hover { border-color: #4f4f4d; color: var(--on-dark); }
+  .legend-item:not([aria-pressed='true']):not([aria-selected='true']):not(.is-static):hover { border-color: #4f4f4d; color: var(--on-dark); }
 }
 
 /* ============ FILAS DE BASES ============ */
@@ -565,4 +565,91 @@
   .drawer-foot .btn { flex: 1; }
   .kv { grid-template-columns: 104px minmax(0, 1fr); }
   .leads { border-radius: 14px; margin-inline: -4px; }
+}
+
+/* ============ CONTACTO ============ */
+.contact-head-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; }
+.contact-signature { display: flex; align-items: center; gap: 12px; }
+.contact-signature .label { color: var(--on-dark-3); white-space: nowrap; }
+.contact-signature .input { width: 220px; height: 40px; border-radius: var(--r-pill); padding: 0 16px; }
+.contact-tabs { margin-top: 28px; }
+
+.contact-list { display: flex; flex-direction: column; gap: 12px; }
+.contact-card {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 24px;
+  padding: 16px;
+  border-radius: var(--r-panel);
+  background: var(--paper);
+}
+.contact-card.is-muted .contact-body > *:not(.contact-actions) { opacity: 0.55; }
+
+.contact-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 8 / 5;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--niebla);
+  align-self: start;
+}
+.contact-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; transition: transform var(--t-base); }
+.contact-thumb-label {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--r-pill);
+  background: var(--carbon);
+  color: var(--on-dark);
+  font-size: 12px;
+}
+.contact-thumb-label svg { width: 12px; height: 12px; }
+@media (hover: hover) {
+  .contact-thumb:hover img { transform: scale(1.03); }
+}
+
+.contact-body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.contact-name { font-family: var(--font-display); font-weight: 500; font-size: 22px; line-height: 1.1; letter-spacing: -0.01em; color: var(--ink); overflow-wrap: anywhere; }
+.contact-sub { margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 13px; color: var(--ink-3); }
+
+.contact-number { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 13px; color: var(--ink-3); }
+.contact-number strong { font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.contact-number.is-empty { color: var(--ink-2); }
+.contact-level { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; align-self: center; background: var(--line-light-strong); }
+.contact-level.is-alta { background: var(--crimson); }
+.contact-level.is-media { background: var(--ink-2); }
+
+.contact-message { display: flex; flex-direction: column; gap: 6px; }
+.contact-message-head { display: flex; align-items: center; justify-content: space-between; }
+/* .input fija 40 px de alto; el mensaje crece con su texto. */
+.field-niebla .contact-textarea { height: auto; }
+.contact-textarea { width: 100%; resize: vertical; min-height: 64px; max-height: 420px; field-sizing: content; padding: 12px 14px; border-radius: var(--r-field); font: inherit; font-size: 14px; line-height: 1.5; }
+
+.contact-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.contact-actions .wa-btn.is-primary { text-decoration: none; }
+.contact-others { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line-light); }
+.contact-note { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+.contact-log { font-size: 12px; color: var(--ink-3); }
+
+.contact-empty { padding: 56px 24px; border-radius: var(--r-panel); background: var(--paper); text-align: center; }
+.contact-empty h2 { font-family: var(--font-display); font-weight: 500; font-size: 22px; color: var(--ink); }
+.contact-empty p { margin: 8px auto 0; max-width: 48ch; color: var(--ink-2); line-height: 1.55; }
+.skeleton-card .contact-thumb { aspect-ratio: 8 / 5; }
+
+@media (max-width: 900px) {
+  .contact-card { grid-template-columns: 1fr; gap: 16px; }
+  .contact-thumb { max-width: 420px; }
+}
+@media (max-width: 760px) {
+  .contact-signature { width: 100%; }
+  .contact-signature .input { flex: 1; width: auto; }
+  .contact-tabs { flex-wrap: nowrap; overflow-x: auto; margin-inline: -16px; padding-inline: 16px; scrollbar-width: none; }
+  .contact-tabs .legend-item { flex-shrink: 0; }
+  .contact-actions > * { flex: 1 1 auto; justify-content: center; }
 }

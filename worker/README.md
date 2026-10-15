@@ -1,12 +1,13 @@
 # Worker de demos (Mac)
 
-El Prospector en Dokploy guarda la cola de demos; este worker corre en la Mac, pide trabajos por la API y hace el trabajo pesado con Claude Code en modo headless. Cada negocio candidato pasa por cinco pasos:
+El Prospector en Dokploy guarda la cola de demos; este worker corre en la Mac, pide trabajos por la API y hace el trabajo pesado con Claude Code en modo headless. Cada negocio candidato pasa por seis pasos:
 
 1. **Extracción** del sitio actual: capturas a 1440, marca, textos, subpáginas y recursos (Playwright con Chrome).
 2. **Auditoría visual** (Sonnet): mira las capturas y decide si el sitio amerita una demo. Si dice que no, el negocio queda como «sitio aceptable» y no se vuelve a intentar solo en 30 días.
 3. **Investigación completa** (obligatoria antes de construir): Google, redes, directorios, Wayback. Deja `brand.json`, el WhatsApp con su nivel de confianza y las dudas.
 4. **Construcción** en una copia aislada del proyecto Astro de la lista 2 (`mkwork.sh`), con verificación visual a 1440 y 390.
 5. **Publicación** en el repositorio de demos (BetazoDev/demos, que Dokploy despliega): compila el sitio completo, genera la miniatura, hace commit solo de sus archivos y push a `main`.
+6. **Mensajes de contacto** (Sonnet): con lo investigado redacta el primer mensaje (solo confirma el número) y el segundo (lo que vimos, la demo, la auditoría y la pregunta de cierre), y ordena los números por probabilidad de WhatsApp. Aparecen en la página Contacto del Prospector.
 
 Cada paso deja sus archivos en `DEMOS_DIR/<slug>/`, así que un reintento retoma desde el último paso terminado en lugar de repetir horas de investigación. La ficha del negocio en el Prospector muestra cada paso, la bitácora y el enlace de la demo.
 
@@ -52,6 +53,7 @@ npm start                   # en marcha continua
 npm run once                # toma un trabajo, lo termina y sale
 npm start -- --dry-run      # solo extrae y devuelve el trabajo a la cola, sin usar Claude
 npm run thumbs -- <slug>    # regenera y publica la miniatura de una demo ya publicada
+npm run message -- <slug>   # prepara los mensajes de contacto de una demo ya publicada
 ```
 
 Para la primera demo, pon `PUBLISH=false` y corre `npm run once`: hace todo menos el push y deja el sitio en `~/Claude/lista-2/_work/prospector-<slug>`. Revísalo, cambia a `PUBLISH=true`, reinicia el worker (lee `.env` al arrancar) y pide la demo otra vez desde la ficha («Reintentar la demo»): retoma con lo ya construido y solo publica.

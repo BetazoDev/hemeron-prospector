@@ -3,7 +3,7 @@
 import { createContext, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { ChevronDown, Download, House, Layers, LogOut, Search, Settings, Upload, Workflow } from 'lucide-react'
+import { ChevronDown, Download, House, Layers, LogOut, MessageCircle, Search, Settings, Upload, Workflow } from 'lucide-react'
 import { HemeronLogo } from '../HemeronLogo'
 import SettingsModal from '../SettingsModal'
 import ImportCSVModal from '../ImportCSVModal'
@@ -14,7 +14,7 @@ import { useNow } from './useNow'
 import { DEMO_STEP_LABEL, RAIL_STAGES, stageCount, type Activity, type DemoQueue, type ShellData } from './shell-types'
 import { buildLeadsCsv, downloadCsv } from '@/lib/export-csv'
 
-export type NavKey = 'inicio' | 'bases' | 'embudo'
+export type NavKey = 'inicio' | 'bases' | 'embudo' | 'contacto'
 
 interface Toast {
   id: number
@@ -357,6 +357,9 @@ export default function AppShell({ active, children }: { active: NavKey; childre
             <Link href="/embudo" aria-current={active === 'embudo' ? 'page' : undefined}>
               Embudo
             </Link>
+            <Link href="/contacto" aria-current={active === 'contacto' ? 'page' : undefined}>
+              Contacto
+            </Link>
           </nav>
           <div className="topbar-end">
             <button type="button" className="search-trigger" onClick={() => setPaletteOpen(true)} aria-label="Buscar en todo">
@@ -396,6 +399,10 @@ export default function AppShell({ active, children }: { active: NavKey; childre
         <Link href="/embudo" aria-current={active === 'embudo' ? 'page' : undefined}>
           <Workflow aria-hidden="true" />
           Embudo
+        </Link>
+        <Link href="/contacto" aria-current={active === 'contacto' ? 'page' : undefined}>
+          <MessageCircle aria-hidden="true" />
+          Contacto
         </Link>
         <button type="button" onClick={() => setPaletteOpen(true)}>
           <Search aria-hidden="true" />

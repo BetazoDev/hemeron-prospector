@@ -9,6 +9,7 @@ import { auditSite, type Audit } from './steps/audit.js'
 import { buildSite, fixBuild, workDirFor, type BuildSummary } from './steps/build.js'
 import { extractSite } from './steps/extract.js'
 import { publishSite, PublishError, RepoBusyError } from './steps/publish.js'
+import { writeMessages } from './steps/message.js'
 import { researchBusiness, type ResearchSummary } from './steps/research.js'
 
 export interface JobControl {
@@ -161,6 +162,16 @@ export async function runJob(job: ClaimedJob, slot: number, ctl: JobControl): Pr
       throw error
     }
     const { demoUrl, live } = published
+
+    // 6. Mensajes de contacto. Si fallan, la demo ya está publicada: se rehacen con `npm run message`.
+    try {
+      await event('Redactando los mensajes de contacto', 'publish')
+      await api.outreach(lead.id, await writeMessages(lead, dir, progress))
+      await event('Mensajes de contacto listos', 'publish')
+    } catch (error) {
+      if (error instanceof RateLimitError || error instanceof AuthError) ctl.pause(error instanceof RateLimitError ? error.resetAt : new Date(Date.now() + 30 * 60_000), error instanceof RateLimitError ? 'limit' : 'auth')
+      await event(`Sin mensajes de contacto (${(error as Error).message.slice(0, 160)}); se preparan con npm run message -- ${slug}`, 'publish')
+    }
     await api.finish(job, {
       outcome: 'published',
       demoUrl,

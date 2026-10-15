@@ -12,7 +12,8 @@
     "once": "tsx --env-file=.env src/index.ts --once",
     "check": "tsc --noEmit -p .",
     "probe": "tsx --env-file=.env src/probe.ts",
-    "thumbs": "tsx --env-file=.env src/thumbs.ts"
+    "thumbs": "tsx --env-file=.env src/thumbs.ts",
+    "message": "tsx --env-file=.env src/message.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.296",

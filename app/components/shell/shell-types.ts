@@ -36,8 +36,8 @@ export const RAIL_STAGES = [
   { slug: 'revision', segment: 'unverified', label: 'Revisión manual', stages: ['unverified'] },
   { slug: 'preparando', segment: 'preparing', label: 'Preparando demo', stages: ['queued', 'researching', 'building'] },
   { slug: 'demo', segment: 'published', label: 'Demo lista', stages: ['published'] },
-  { slug: 'contactados', segment: 'contacted', label: 'Contactados', stages: ['contacted'] },
-  { slug: 'respondieron', segment: 'replied', label: 'Respondieron', stages: ['replied'] },
+  { slug: 'contactados', segment: 'contacted', label: 'Contactados', stages: ['contacted', 'no_whatsapp'] },
+  { slug: 'respondieron', segment: 'replied', label: 'Respondieron', stages: ['replied', 'pitched', 'interested'] },
   { slug: 'clientes', segment: 'won', label: 'Clientes', stages: ['won'] },
 ] as const
 

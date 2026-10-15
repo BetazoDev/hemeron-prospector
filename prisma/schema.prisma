@@ -20,6 +20,8 @@ model User {
   email        String        @unique
   passwordHash String
   apifyApiKey  String?
+  /// Cómo firma los mensajes de contacto: «Soy {nombre}, de Hemeron».
+  displayName  String?
   maxLeads     Int           @default(100)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -108,6 +110,15 @@ model Lead {
   demoUrl  String?
   demoSlug String?
   demoJobs DemoJob[]
+
+  /// Contacto, preparado por el worker al publicar la demo:
+  /// { m1, m2, numbers: [{ digits, level: alta|media|baja, source }], generatedAt }
+  outreach      Json?
+  /// Número al que se le escribió (el primero que respondió o el último que se probó).
+  contactNumber String?
+  /// Historial del contacto: [{ at, action, number? }]
+  contactLog    Json      @default("[]")
+  contactedAt   DateTime?
 
   @@index([userId, stage])
   @@index([jobId, checkState])

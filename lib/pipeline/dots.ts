@@ -30,7 +30,10 @@ export function dotState(lead: { stage: string; checkState: string | null }): Do
     case 'published':
       return 'd'
     case 'contacted':
+    case 'no_whatsapp':
     case 'replied':
+    case 'pitched':
+    case 'interested':
     case 'won':
       return 'k'
     case 'unverified':

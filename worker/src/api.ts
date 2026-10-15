@@ -83,6 +83,11 @@ export const api = {
     await call(`/api/worker/jobs/${job.id}/events`, { quiet: true }, job.claimedAt)
   },
 
+  /** Mensajes de contacto y números por probar de un negocio. */
+  async outreach(leadId: number, draft: { m1: string; m2: string; numbers: { digits: string; level: string; source: string }[] }) {
+    await call(`/api/worker/leads/${leadId}/outreach`, draft)
+  },
+
   async finish(job: JobRef, outcome: Outcome) {
     await call(`/api/worker/jobs/${job.id}/finish`, outcome, job.claimedAt)
   },
