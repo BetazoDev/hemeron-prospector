@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getTokenFromRequest, verifyToken } from '@/lib/auth'
+import { dropKnownLeads } from '@/lib/pipeline/dedupe'
 import { scheduleSiteChecks } from '@/lib/pipeline/site-checks'
 import { triageLead } from '@/lib/pipeline/triage'
 import Papa from 'papaparse'
@@ -109,7 +110,7 @@ const PALETTE = ['#ce0037', '#6e0112', '#d7d8d7', '#b4b4b2', '#f2c14e', '#5fd39a
     })
 
     // Insert all leads
-    const leadsData = parsed.data.map((row) => {
+    const mappedRows = parsed.data.map((row) => {
       const mapped = mapRow(row)
       return {
         userId,
@@ -122,6 +123,8 @@ const PALETTE = ['#ce0037', '#6e0112', '#d7d8d7', '#b4b4b2', '#f2c14e', '#5fd39a
       }
     })
 
+    // Los negocios que ya están en otra base se descartan sin avisar.
+    const leadsData = await dropKnownLeads(userId, job.id, mappedRows)
     const created = await prisma.$transaction(
       leadsData.map((lead) => prisma.lead.create({ data: lead }))
     )

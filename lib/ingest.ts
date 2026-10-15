@@ -6,6 +6,7 @@ import {
   getApifyRun,
   type ApifyLead,
 } from './apify'
+import { dropKnownLeads } from './pipeline/dedupe'
 import { scheduleSiteChecks } from './pipeline/site-checks'
 import { triageLead } from './pipeline/triage'
 
@@ -170,7 +171,8 @@ export async function syncScrapingJob(jobId: number): Promise<SyncOutcome> {
 
   try {
     const items = await fetchApifyResults(run.datasetId, apiKey)
-    const leads = items.map((item) => mapLead(item, job.userId, job.id, job.niche, job.zone))
+    // Los negocios que ya están en otra base se descartan sin avisar.
+    const leads = await dropKnownLeads(job.userId, job.id, items.map((item) => mapLead(item, job.userId, job.id, job.niche, job.zone)))
 
     // Reescribir en vez de añadir mantiene la importación repetible. Todo en una sola
     // transacción, para que un fallo a mitad no deje la base con leads incompletos.
