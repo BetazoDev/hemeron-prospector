@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import { runAgent } from './claude.js'
 import { config } from './config.js'
 import { log } from './log.js'
@@ -6,6 +7,7 @@ import { log } from './log.js'
  * `npm run probe`: comprueba que Claude responde con la credencial de worker/.env (o la sesión
  * de `claude login`) antes de dejar el worker corriendo. Usa una sola vuelta de Haiku.
  */
+fs.mkdirSync(config.demosDir, { recursive: true })
 const started = Date.now()
 try {
   const { output, sessionId, costUsd } = await runAgent<{ ok: boolean; model: string }>({

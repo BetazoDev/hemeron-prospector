@@ -130,7 +130,8 @@ export async function runAgent<T>(run: AgentRun): Promise<AgentResult<T>> {
     disallowedTools: ['Bash(sudo *)', 'Bash(git push *)', 'Bash(ssh *)', 'Bash(scp *)', ...(run.disallowedTools ?? [])],
     // Sin nadie frente a la pantalla: lo que no está en allowedTools se niega, no se pregunta.
     permissionMode: 'dontAsk',
-    model: run.model,
+    model: config.model ?? run.model,
+    ...(config.effort ? { effort: config.effort } : {}),
     maxTurns: run.maxTurns,
     systemPrompt: { type: 'preset', preset: 'claude_code' },
     // Ni hooks ni CLAUDE.md de la máquina: el brief trae todo lo que el agente necesita.

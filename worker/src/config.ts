@@ -30,6 +30,10 @@ export const config = {
   demosBaseUrl: (process.env.DEMOS_BASE_URL?.trim() || 'https://demos.diabolicalservices.tech').replace(/\/$/, ''),
   publish: process.env.PUBLISH !== 'false',
   sandbox: process.env.WORKER_SANDBOX === 'true',
+  /** Modelo para todos los pasos (p. ej. claude-sonnet-5-5); vacío = el de cada paso. */
+  model: process.env.WORKER_MODEL?.trim() || undefined,
+  /** Esfuerzo de razonamiento: low | medium | high | xhigh | max. */
+  effort: (['low', 'medium', 'high', 'xhigh', 'max'] as const).find((e) => e === process.env.WORKER_EFFORT?.trim()),
   /** Puertos para los servidores de Astro de cada demo en paralelo. */
   basePort: num('BASE_PORT', 4600),
   pollMs: num('POLL_MS', 15_000),
