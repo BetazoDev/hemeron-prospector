@@ -112,6 +112,11 @@ function describeTool(name: string, input: Record<string, unknown>): string | nu
   return null
 }
 
+/** Read/Write/Edit con ruta absoluta: `Write(/Users/…)` → `Write(//Users/…)`. */
+function absoluteRule(rule: string): string {
+  return rule.replace(/^(Read|Write|Edit)\(\/(?!\/)/, '$1(//')
+}
+
 export async function runAgent<T>(run: AgentRun): Promise<AgentResult<T>> {
   const abort = new AbortController()
   active.add(abort)
@@ -126,7 +131,8 @@ export async function runAgent<T>(run: AgentRun): Promise<AgentResult<T>> {
   const options: Options = {
     cwd: run.cwd,
     additionalDirectories: run.additionalDirectories,
-    allowedTools: run.allowedTools,
+    // En las reglas de Claude Code, `/ruta` es relativa al proyecto; una ruta absoluta va con `//`.
+    allowedTools: run.allowedTools.map(absoluteRule),
     disallowedTools: ['Bash(sudo *)', 'Bash(git push *)', 'Bash(ssh *)', 'Bash(scp *)', ...(run.disallowedTools ?? [])],
     // Sin nadie frente a la pantalla: lo que no está en allowedTools se niega, no se pregunta.
     permissionMode: 'dontAsk',
