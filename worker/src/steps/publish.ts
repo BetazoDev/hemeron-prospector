@@ -1,10 +1,11 @@
 import fs from 'node:fs'
+import http from 'node:http'
 import path from 'node:path'
 import { chromium } from 'playwright-core'
 import sharp from 'sharp'
 import type { ClaimedLead } from '../api.js'
 import { config } from '../config.js'
-import { run, start, type RunError } from '../proc.js'
+import { run, type RunError } from '../proc.js'
 
 /**
  * Publicación en el sitio de demos (repo BetazoDev/demos, Dokploy despliega cada push a main).
@@ -153,19 +154,59 @@ async function waitFor(url: string, timeoutMs: number): Promise<boolean> {
   return false
 }
 
-/** Miniatura del directorio desde la compilación de producción (astro preview), 960x600. */
-async function thumbnail(slug: string, port: number) {
-  const preview = start('pnpm', ['exec', 'astro', 'preview', '--port', String(port), '--host', '127.0.0.1'], {
-    cwd: path.join(P(), 'astro'),
-    stdio: 'ignore',
+const MIME: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css',
+  '.js': 'text/javascript',
+  '.mjs': 'text/javascript',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+}
+
+/**
+ * Sirve la compilación de producción (astro/dist) en un puerto local, como la sirve el sitio
+ * de demos: /slug → dist/slug/index.html. Sin `astro preview`, que fuera de una terminal se va
+ * a segundo plano con un archivo de bloqueo y solo admite uno a la vez.
+ */
+async function serveDist(port: number): Promise<http.Server> {
+  const root = path.join(P(), 'astro', 'dist')
+  const server = http.createServer((req, res) => {
+    const clean = decodeURIComponent((req.url ?? '/').split('?')[0]).replace(/\/+$/, '') || '/'
+    const target = path.normalize(path.join(root, clean))
+    if (!target.startsWith(root)) return void res.writeHead(403).end()
+    const file = [target, path.join(target, 'index.html'), `${target}.html`].find((f) => fs.existsSync(f) && fs.statSync(f).isFile())
+    if (!file) return void res.writeHead(404).end()
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] ?? 'application/octet-stream' })
+    fs.createReadStream(file).pipe(res)
   })
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(port, '127.0.0.1', resolve)
+  })
+  return server
+}
+
+/** Miniatura del directorio (960x600, como las demás) desde la compilación de producción. */
+export async function thumbnail(slug: string, port: number) {
+  const server = await serveDist(port)
   try {
-    if (!(await waitFor(`http://127.0.0.1:${port}/${slug}/`, 60_000))) throw new Error('astro preview no respondió')
     const browser = await chromium.launch({ channel: 'chrome', headless: true, handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false })
     try {
       const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'es-MX' })
       const page = await ctx.newPage()
-      await page.goto(`http://127.0.0.1:${port}/${slug}/`, { waitUntil: 'load', timeout: 60_000 })
+      // El sitio de demos no usa / final en sus rutas (trailingSlash: "never").
+      const res = await page.goto(`http://127.0.0.1:${port}/${slug}`, { waitUntil: 'networkidle', timeout: 60_000 })
+      if (!res?.ok()) throw new Error(`la página respondió ${res?.status() ?? 'sin respuesta'}`)
       await page.addStyleTag({ content: '[data-demo-pill]{display:none!important}' })
       await page.waitForTimeout(3200)
       const shot = await page.screenshot({ type: 'png' })
@@ -174,14 +215,7 @@ async function thumbnail(slug: string, port: number) {
       await browser.close()
     }
   } finally {
-    // pnpm y astro preview van en su propio grupo: se detiene el grupo entero.
-    if (preview.pid) {
-      try {
-        process.kill(-preview.pid, 'SIGTERM')
-      } catch {
-        // Ya terminó.
-      }
-    }
+    await new Promise((r) => server.close(r))
   }
 }
 
@@ -303,4 +337,50 @@ async function writeAndPush(lead: ClaimedLead, slug: string, work: string, name:
     if (error instanceof PublishError) throw error
     throw new PublishError(`Publicación: ${String((error as Error).message ?? error).slice(0, 300)}`, true)
   }
+}
+
+/**
+ * Vuelve a generar y publicar las miniaturas de demos ya publicadas (`npm run thumbs -- slug…`).
+ * Mismas reglas que una publicación: main limpio y al día, y un commit solo con las miniaturas.
+ */
+export async function republishThumbnails(slugs: string[], port: number, say: (t: string) => void): Promise<string[]> {
+  return exclusive(async () => {
+    const busy = (why: string) => new RepoBusyError(`El repositorio de demos ${why}`, 0)
+    const { stdout: branch } = await git('rev-parse', '--abbrev-ref', 'HEAD')
+    if (branch.trim() !== 'main') throw busy(`está en la rama ${branch.trim()}, no en main`)
+    if ((await git('status', '--porcelain')).stdout.trim()) throw busy('tiene cambios sin commitear')
+    await git('fetch', '-q', 'origin', 'main')
+    if (Number((await git('rev-list', '--count', 'origin/main..HEAD')).stdout.trim()) > 0) throw busy('tiene commits locales sin subir')
+    await git('merge', '-q', '--ff-only', 'origin/main')
+
+    const dist = path.join(P(), 'astro', 'dist')
+    if (slugs.some((slug) => !fs.existsSync(path.join(dist, slug, 'index.html')))) {
+      say('Compilando el sitio de demos para tener las páginas al día')
+      await run('pnpm', ['--dir', path.join(P(), 'astro'), 'build'], { timeout: 25 * 60_000, maxBuffer: 2 * 1024 * 1024 })
+    }
+    const done: string[] = []
+    for (const slug of slugs) {
+      try {
+        await thumbnail(slug, port)
+        done.push(slug)
+        say(`Miniatura lista: ${slug}`)
+      } catch (error) {
+        say(`Sin miniatura para ${slug}: ${(error as Error).message}`)
+      }
+    }
+    const paths = done.map((slug) => `public/thumbs/p-${slug}.webp`)
+    if (!paths.length) return done
+    await git('add', '--', ...paths)
+    if (!(await git('diff', '--cached', '--name-only')).stdout.trim()) return done
+    await git('commit', '-q', '-m', `Prospector: miniaturas de ${done.join(', ')}\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`, '--', ...paths)
+    try {
+      await git('push', '-q', 'origin', 'main')
+    } catch (error) {
+      await git('reset', '-q', '--soft', 'HEAD~1').catch(() => undefined)
+      await git('reset', '-q', '--', ...paths).catch(() => undefined)
+      for (const p of paths) await git('checkout', '--', p).catch(() => fs.rmSync(path.join(P(), p), { force: true }))
+      throw error
+    }
+    return done
+  })
 }

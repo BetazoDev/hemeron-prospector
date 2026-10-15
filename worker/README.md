@@ -51,6 +51,7 @@ npm run probe
 npm start                   # en marcha continua
 npm run once                # toma un trabajo, lo termina y sale
 npm start -- --dry-run      # solo extrae y devuelve el trabajo a la cola, sin usar Claude
+npm run thumbs -- <slug>    # regenera y publica la miniatura de una demo ya publicada
 ```
 
 Para la primera demo, pon `PUBLISH=false` y corre `npm run once`: hace todo menos el push y deja el sitio en `~/Claude/lista-2/_work/prospector-<slug>`. Revísalo, cambia a `PUBLISH=true`, reinicia el worker (lee `.env` al arrancar) y pide la demo otra vez desde la ficha («Reintentar la demo»): retoma con lo ya construido y solo publica.
