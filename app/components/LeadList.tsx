@@ -1,6 +1,7 @@
 'use client'
 
 import { ExternalLink, MapPin, MoreHorizontal, RotateCcw, Ban, Trash2, RefreshCw, Sparkles, Star } from 'lucide-react'
+import { useEffect } from 'react'
 import type { Lead, LeadAction } from './lead-types'
 import { displayDomain, findings, Score, SiteChip, siteHref, whyLine, WhatsAppButton } from './LeadBits'
 import { usePopover } from './shell/usePopover'
@@ -24,8 +25,34 @@ interface LeadListProps {
   emptyText?: string
 }
 
+/**
+ * La tabla recorta lo que sale de sus esquinas redondeadas, así que el menú de una fila flota
+ * con posición fija junto a su botón: hacia abajo si cabe en la pantalla, si no hacia arriba.
+ */
+function placeRowMenu(menu: HTMLDivElement | null) {
+  const button = menu?.parentElement?.querySelector('button')
+  if (!menu || !button) return
+  const b = button.getBoundingClientRect()
+  const height = menu.offsetHeight
+  const below = b.bottom + 6 + height <= window.innerHeight - 8
+  menu.style.position = 'fixed'
+  menu.style.right = `${Math.max(8, window.innerWidth - b.right)}px`
+  menu.style.top = `${below ? b.bottom + 6 : Math.max(8, b.top - 6 - height)}px`
+  menu.style.transformOrigin = below ? 'top right' : 'bottom right'
+}
+
 function RowMenu({ lead, onAction, onDelete }: { lead: Lead; onAction: LeadListProps['onAction']; onDelete: LeadListProps['onDelete'] }) {
   const { open: menuOpen, toggle, close, anchor } = usePopover()
+  // Con posición fija, el menú se quedaría atrás al desplazar la página: se cierra.
+  useEffect(() => {
+    if (!menuOpen) return
+    window.addEventListener('scroll', close, { capture: true, passive: true })
+    window.addEventListener('resize', close)
+    return () => {
+      window.removeEventListener('scroll', close, { capture: true })
+      window.removeEventListener('resize', close)
+    }
+  }, [menuOpen, close])
   const href = siteHref(lead)
   const discarded = lead.stage === 'discarded'
   const run = (fn: () => void) => (e: React.MouseEvent) => {
@@ -39,7 +66,7 @@ function RowMenu({ lead, onAction, onDelete }: { lead: Lead; onAction: LeadListP
         <MoreHorizontal aria-hidden="true" />
       </button>
       {menuOpen && (
-        <div className="popover align-end row-menu" role="menu">
+        <div className="popover align-end row-menu" role="menu" ref={placeRowMenu}>
           {lead.mapsUrl && (
             <a className="menu-item" role="menuitem" href={lead.mapsUrl} target="_blank" rel="noopener noreferrer" onClick={close}>
               <MapPin aria-hidden="true" />
